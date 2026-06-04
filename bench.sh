@@ -34,14 +34,37 @@ command -v purr &>/dev/null || { echo "[WARN] purr not in PATH — purr_ms will 
 # ── out file ──────────────────────────────────────────────────────────────────
 mkdir -p "$(dirname "$OUT")"
 HEADER="run_id,iteration,repo,file_count,git_ms,purr_ms,timestamp"
-[[ ! -f "$OUT" ]] && echo "$HEADER" > "$OUT"
 
-# validate header if file exists and is non-empty
-EXISTING_HEADER=$(head -1 "$OUT" 2>/dev/null || true)
-if [[ -n "$EXISTING_HEADER" && "$EXISTING_HEADER" != "$HEADER" ]]; then
-    echo "[ERROR] $OUT has incompatible header: $EXISTING_HEADER"
-    echo "[ERROR] expected: $HEADER"
-    exit 1
+if [[ -f "$OUT" ]]; then
+    echo "[WARN] File exists: $OUT"
+    echo "  1) Delete it and recreate"
+    echo "  2) Append to it"
+    echo "  3) Abort the call"
+    while true; do
+        read -r -p "Enter choice [1-3]: " CHOICE < /dev/tty
+        case "$CHOICE" in
+            1)
+                rm -f "$OUT"
+                echo "$HEADER" > "$OUT"
+                break
+                ;;
+            2)
+                if [[ ! -s "$OUT" ]]; then
+                    echo "$HEADER" > "$OUT"
+                fi
+                break
+                ;;
+            3)
+                echo "[INFO] Aborting call."
+                exit 1
+                ;;
+            *)
+                echo "Invalid choice. Please enter 1, 2, or 3."
+                ;;
+        esac
+    done
+else
+    echo "$HEADER" > "$OUT"
 fi
 
 # ── prep ──────────────────────────────────────────────────────────────────────
